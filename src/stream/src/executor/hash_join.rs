@@ -724,7 +724,15 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     self.side_r.ht.update_epoch(barrier.epoch.curr);
 
                     // Report metrics of cached join rows/entries
-                    for (side, ht) in [("left", &self.side_l.ht), ("right", &self.side_r.ht)] {
+                    for (side, side_bucket, side_ghost_bucket, ht) in [
+                        ("left", "left_bucket", "left_ghost_bucket", &self.side_l.ht),
+                        (
+                            "right",
+                            "right_bucket",
+                            "right_ghost_bucket",
+                            &self.side_r.ht,
+                        ),
+                    ] {
                         // TODO(yuhao): Those two metric calculation cost too much time (>250ms).
                         // Those will result in that barrier is always ready
                         // in source. Since select barrier is preferred,
@@ -737,6 +745,14 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                             .join_cached_entries
                             .with_label_values(&[&actor_id_str, side])
                             .set(ht.entry_count() as i64);
+                        self.metrics
+                            .join_cached_entries
+                            .with_label_values(&[&actor_id_str, side_bucket])
+                            .set(ht.bucket_count() as i64);
+                        self.metrics
+                            .join_cached_entries
+                            .with_label_values(&[&actor_id_str, side_ghost_bucket])
+                            .set(ht.ghost_bucket_count() as i64);
                         // self.metrics
                         //     .join_cached_estimated_size
                         //     .with_label_values(&[&actor_id_str, side])
