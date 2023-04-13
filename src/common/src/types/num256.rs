@@ -46,143 +46,129 @@ impl<'a> Display for Int256Ref<'a> {
     }
 }
 
-macro_rules! impl_common_for_num256 {
-    ($scalar:ident, $scalar_ref:ident < $gen:tt > , $inner:ty, $array_type:ident) => {
-        impl Scalar for $scalar {
-            type ScalarRefType<$gen> = $scalar_ref<$gen>;
+impl Scalar for Int256 {
+    type ScalarRefType<'a> = Int256Ref<'a>;
 
-            fn as_scalar_ref(&self) -> Self::ScalarRefType<'_> {
-                $scalar_ref(self.0.as_ref())
-            }
-        }
+    fn as_scalar_ref(&self) -> Self::ScalarRefType<'_> {
+        Int256Ref(self.0.as_ref())
+    }
+}
+impl<'a> ScalarRef<'a> for Int256Ref<'a> {
+    type ScalarType = Int256;
 
-        impl<$gen> ScalarRef<$gen> for $scalar_ref<$gen> {
-            type ScalarType = $scalar;
+    fn to_owned_scalar(&self) -> Self::ScalarType {
+        Int256((*self.0).into())
+    }
 
-            fn to_owned_scalar(&self) -> Self::ScalarType {
-                $scalar((*self.0).into())
-            }
+    fn hash_scalar<H: Hasher>(&self, state: &mut H) {
+        use std::hash::Hash as _;
+        self.0.hash(state)
+    }
+}
+impl FromStr for Int256 {
+    type Err = ParseIntError;
 
-            fn hash_scalar<H: Hasher>(&self, state: &mut H) {
-                use std::hash::Hash as _;
-                self.0.hash(state)
-            }
-        }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        <i256>::from_str(s).map(Into::into)
+    }
+}
+impl Int256 {
+    #[inline]
+    pub fn min() -> Self {
+        Self::from(<i256>::MIN)
+    }
 
-        impl FromStr for $scalar {
-            type Err = ParseIntError;
+    #[inline]
+    pub fn max() -> Self {
+        Self::from(<i256>::MAX)
+    }
 
-            fn from_str(s: &str) -> Result<Self, Self::Err> {
-                <$inner>::from_str(s).map(Into::into)
-            }
-        }
+    #[inline]
+    pub fn into_inner(self) -> i256 {
+        *self.0
+    }
 
-        impl $scalar {
-            #[inline]
-            pub fn min() -> Self {
-                Self::from(<$inner>::MIN)
-            }
+    #[inline]
+    pub const fn size() -> usize {
+        mem::size_of::<i256>()
+    }
 
-            #[inline]
-            pub fn max() -> Self {
-                Self::from(<$inner>::MAX)
-            }
+    #[inline]
+    pub fn array_type() -> ArrayType {
+        ArrayType::Int256
+    }
 
-            #[inline]
-            pub fn into_inner(self) -> $inner {
-                *self.0
-            }
+    #[inline]
+    pub fn from_ne_bytes(bytes: [u8; mem::size_of::<i256>()]) -> Self {
+        Self(Box::new(<i256>::from_ne_bytes(bytes)))
+    }
 
-            #[inline]
-            pub const fn size() -> usize {
-                mem::size_of::<$inner>()
-            }
+    #[inline]
+    pub fn from_le_bytes(bytes: [u8; mem::size_of::<i256>()]) -> Self {
+        Self(Box::new(<i256>::from_le_bytes(bytes)))
+    }
 
-            #[inline]
-            pub fn array_type() -> ArrayType {
-                ArrayType::$array_type
-            }
+    #[inline]
+    pub fn from_be_bytes(bytes: [u8; mem::size_of::<i256>()]) -> Self {
+        Self(Box::new(<i256>::from_be_bytes(bytes)))
+    }
 
-            #[inline]
-            pub fn from_ne_bytes(bytes: [u8; mem::size_of::<$inner>()]) -> Self {
-                Self(Box::new(<$inner>::from_ne_bytes(bytes)))
-            }
+    pub fn from_protobuf(input: &mut impl Read) -> ArrayResult<Self> {
+        let mut buf = [0u8; mem::size_of::<i256>()];
+        input.read_exact(&mut buf)?;
+        Ok(Self::from_be_bytes(buf))
+    }
+}
+impl From<i256> for Int256 {
+    fn from(value: i256) -> Self {
+        Self(Box::new(value))
+    }
+}
+impl Int256Ref<'_> {
+    #[inline]
+    pub fn to_le_bytes(self) -> [u8; mem::size_of::<i256>()] {
+        self.0.to_le_bytes()
+    }
 
-            #[inline]
-            pub fn from_le_bytes(bytes: [u8; mem::size_of::<$inner>()]) -> Self {
-                Self(Box::new(<$inner>::from_le_bytes(bytes)))
-            }
+    #[inline]
+    pub fn to_be_bytes(self) -> [u8; mem::size_of::<i256>()] {
+        self.0.to_be_bytes()
+    }
 
-            #[inline]
-            pub fn from_be_bytes(bytes: [u8; mem::size_of::<$inner>()]) -> Self {
-                Self(Box::new(<$inner>::from_be_bytes(bytes)))
-            }
+    #[inline]
+    pub fn to_ne_bytes(self) -> [u8; mem::size_of::<i256>()] {
+        self.0.to_ne_bytes()
+    }
 
-            pub fn from_protobuf(input: &mut impl Read) -> ArrayResult<Self> {
-                let mut buf = [0u8; mem::size_of::<$inner>()];
-                input.read_exact(&mut buf)?;
-                Ok(Self::from_be_bytes(buf))
-            }
-        }
-
-        impl From<$inner> for $scalar {
-            fn from(value: $inner) -> Self {
-                Self(Box::new(value))
-            }
-        }
-
-        impl $scalar_ref<'_> {
-            #[inline]
-            pub fn to_le_bytes(self) -> [u8; mem::size_of::<$inner>()] {
-                self.0.to_le_bytes()
-            }
-
-            #[inline]
-            pub fn to_be_bytes(self) -> [u8; mem::size_of::<$inner>()] {
-                self.0.to_be_bytes()
-            }
-
-            #[inline]
-            pub fn to_ne_bytes(self) -> [u8; mem::size_of::<$inner>()] {
-                self.0.to_ne_bytes()
-            }
-
-            pub fn to_protobuf<T: std::io::Write>(self, output: &mut T) -> ArrayResult<usize> {
-                output.write(&self.to_be_bytes()).map_err(Into::into)
-            }
-        }
-
-        impl ToText for $scalar_ref<'_> {
-            fn write<W: Write>(&self, f: &mut W) -> std::fmt::Result {
-                write!(f, "{}", self.0)
-            }
-
-            fn write_with_type<W: Write>(&self, _ty: &DataType, f: &mut W) -> std::fmt::Result {
-                self.write(f)
-            }
-        }
-
-        impl ToBinary for $scalar_ref<'_> {
-            fn to_binary_with_type(&self, _ty: &DataType) -> crate::error::Result<Option<Bytes>> {
-                let mut output = bytes::BytesMut::new();
-                let buffer = self.to_be_bytes();
-                output.put_slice(&buffer);
-                Ok(Some(output.freeze()))
-            }
-        }
-
-        impl $scalar {
-            pub fn from_binary(mut input: &[u8]) -> ArrayResult<Self> {
-                let mut buf = [0; Self::size()];
-                input.read_exact(&mut buf)?;
-                Ok(Self::from_be_bytes(buf))
-            }
-        }
-    };
+    pub fn to_protobuf<T: std::io::Write>(self, output: &mut T) -> ArrayResult<usize> {
+        output.write(&self.to_be_bytes()).map_err(Into::into)
+    }
 }
 
-impl_common_for_num256!(Int256, Int256Ref<'a>, i256, Int256);
+impl ToText for Int256Ref<'_> {
+    fn write<W: Write>(&self, f: &mut W) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 
+    fn write_with_type<W: Write>(&self, _ty: &DataType, f: &mut W) -> std::fmt::Result {
+        self.write(f)
+    }
+}
+impl ToBinary for Int256Ref<'_> {
+    fn to_binary_with_type(&self, _ty: &DataType) -> crate::error::Result<Option<Bytes>> {
+        let mut output = bytes::BytesMut::new();
+        let buffer = self.to_be_bytes();
+        output.put_slice(&buffer);
+        Ok(Some(output.freeze()))
+    }
+}
+impl Int256 {
+    pub fn from_binary(mut input: &[u8]) -> ArrayResult<Self> {
+        let mut buf = [0; Self::size()];
+        input.read_exact(&mut buf)?;
+        Ok(Self::from_be_bytes(buf))
+    }
+}
 impl Int256 {
     // `i256::str_from_hex` and `i256::str_from_prefixed` doesn't support uppercase "0X", so when it
     // fails it will try to parse the lowercase version of the `src`
