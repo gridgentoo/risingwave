@@ -17,6 +17,7 @@ use std::str::{from_utf8, Chars};
 
 use itertools::Itertools;
 use risingwave_common::error::{ErrorCode, Result, RwError};
+use risingwave_common::types::num256::Int256;
 use risingwave_common::types::{DataType, DateTimeField, Decimal, Interval, ScalarImpl};
 use risingwave_sqlparser::ast::{DateTimeField as AstDateTimeField, Expr, Value};
 
@@ -66,6 +67,8 @@ impl Binder {
             (Some(ScalarImpl::Decimal(decimal)), DataType::Decimal)
         } else if let Some(scientific) = Decimal::from_scientific(&s) {
             (Some(ScalarImpl::Decimal(scientific)), DataType::Decimal)
+        } else if let Ok(int_256) = s.parse::<Int256>() {
+            (Some(ScalarImpl::Int256(int_256)), DataType::Int256)
         } else {
             return Err(ErrorCode::BindError(format!("Number {s} overflows")).into());
         };
@@ -314,6 +317,7 @@ mod tests {
             "111111111111111111111111",
             "0.111111",
             "-0.01",
+            "1111111111111111111111111111111111111111111111111",
         ];
         let data = vec![
             Some(ScalarImpl::Int32(1)),
@@ -326,6 +330,9 @@ mod tests {
             )),
             Some(ScalarImpl::Decimal(Decimal::from_str("0.111111").unwrap())),
             Some(ScalarImpl::Decimal(Decimal::from_str("-0.01").unwrap())),
+            Some(ScalarImpl::Int256(
+                Int256::from_str("1111111111111111111111111111111111111111111111111").unwrap(),
+            )),
         ];
         let data_type = vec![
             DataType::Int32,
@@ -334,6 +341,7 @@ mod tests {
             DataType::Decimal,
             DataType::Decimal,
             DataType::Decimal,
+            DataType::Int256,
         ];
 
         for i in 0..values.len() {
