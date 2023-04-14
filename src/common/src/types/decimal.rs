@@ -19,7 +19,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use bytes::{BufMut, Bytes, BytesMut};
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, Zero};
 use postgres_types::{ToSql, Type};
-pub use rust_decimal::prelude::{FromPrimitive, FromStr, ToPrimitive};
+pub use rust_decimal::prelude::{FromStr, ToPrimitive};
 use rust_decimal::{Decimal as RustDecimal, Error, RoundingStrategy};
 
 use super::to_binary::ToBinary;
@@ -163,11 +163,11 @@ macro_rules! impl_from_float {
 }
 
 macro_rules! impl_from {
-    ($T:ty, $from_ty:path) => {
+    ($T:ty) => {
         impl core::convert::From<$T> for Decimal {
             #[inline]
             fn from(t: $T) -> Self {
-                $from_ty(t).unwrap()
+                Self::Normalized(RustDecimal::from(t))
             }
         }
     };
@@ -186,15 +186,24 @@ macro_rules! impl_try_from_decimal {
 }
 
 macro_rules! impl_try_from_float {
-    ($from_ty:ty, $to_ty:ty, $convert:path) => {
-        impl core::convert::From<$from_ty> for $to_ty {
-            fn from(value: $from_ty) -> Self {
-                $convert(value).expect("f32/f64 to decimal should not fail")
+    ($from_ty:ty) => {
+        impl core::convert::TryFrom<$from_ty> for Decimal {
+            type Error = Error;
+
+            fn try_from(num: $from_ty) -> Result<Self, Self::Error> {
+                match num {
+                    num if num.is_nan() => Ok(Decimal::NaN),
+                    num if num.is_infinite() && num.is_sign_positive() => Ok(Decimal::PositiveInf),
+                    num if num.is_infinite() && num.is_sign_negative() => Ok(Decimal::NegativeInf),
+                    num => RustDecimal::try_from(num).map(Decimal::Normalized),
+                }
             }
         }
-        impl core::convert::From<OrderedFloat<$from_ty>> for $to_ty {
-            fn from(value: OrderedFloat<$from_ty>) -> Self {
-                $convert(value.0).expect("f32/f64 to decimal should not fail")
+        impl core::convert::TryFrom<OrderedFloat<$from_ty>> for Decimal {
+            type Error = Error;
+
+            fn try_from(value: OrderedFloat<$from_ty>) -> Result<Self, Self::Error> {
+                Self::try_from(value.0)
             }
         }
     };
@@ -217,10 +226,10 @@ macro_rules! checked_proxy {
 
 impl_try_from_decimal!(Decimal, f32, Decimal::to_f32, "Failed to convert to f32");
 impl_try_from_decimal!(Decimal, f64, Decimal::to_f64, "Failed to convert to f64");
-impl_try_from_float!(f32, Decimal, Decimal::from_f32);
-impl_try_from_float!(f64, Decimal, Decimal::from_f64);
+impl_try_from_float!(f32);
+impl_try_from_float!(f64);
 
-impl FromPrimitive for Decimal {
+impl num_traits::FromPrimitive for Decimal {
     impl_from_integer!([
         (u8, from_u8),
         (u16, from_u16),
@@ -235,12 +244,12 @@ impl FromPrimitive for Decimal {
     impl_from_float!([(f32, from_f32), (f64, from_f64)]);
 }
 
-impl_from!(i16, FromPrimitive::from_i16);
-impl_from!(i32, FromPrimitive::from_i32);
-impl_from!(i64, FromPrimitive::from_i64);
-impl_from!(usize, FromPrimitive::from_usize);
-impl_from!(u32, FromPrimitive::from_u32);
-impl_from!(u64, FromPrimitive::from_u64);
+impl_from!(i16);
+impl_from!(i32);
+impl_from!(i64);
+impl_from!(u32);
+impl_from!(u64);
+impl_from!(usize);
 
 checked_proxy!(CheckedRem, checked_rem, %);
 checked_proxy!(CheckedSub, checked_sub, -);
@@ -664,9 +673,9 @@ mod tests {
             Decimal::NaN,
             Decimal::PositiveInf,
             Decimal::NegativeInf,
-            Decimal::from_f32(1.0).unwrap(),
-            Decimal::from_f32(-1.0).unwrap(),
-            Decimal::from_f32(0.0).unwrap(),
+            Decimal::from_str("1.0").unwrap(),
+            Decimal::from_str("-1.0").unwrap(),
+            Decimal::from_str("0.0").unwrap(),
         ];
         let floats = [
             f32::NAN,
@@ -689,6 +698,8 @@ mod tests {
 
     #[test]
     fn basic_test() {
+        use num_traits::FromPrimitive as _;
+
         assert_eq!(Decimal::from_str("nan").unwrap(), Decimal::NaN,);
         assert_eq!(Decimal::from_str("NaN").unwrap(), Decimal::NaN,);
         assert_eq!(Decimal::from_str("NAN").unwrap(), Decimal::NaN,);

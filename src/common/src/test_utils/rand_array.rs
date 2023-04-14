@@ -67,7 +67,7 @@ impl RandValue for Box<[u8]> {
 
 impl RandValue for Decimal {
     fn rand_value<R: Rng>(rand: &mut R) -> Self {
-        Decimal::from((rand.gen::<u32>() as f64) + 0.1f64)
+        Decimal::try_from((rand.gen::<u32>() as f64) + 0.1f64).unwrap()
     }
 }
 

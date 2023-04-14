@@ -440,24 +440,24 @@ mod tests {
         assert_eq!(general_neg::<i16>(1i16).unwrap(), -1i16);
 
         assert_eq!(
-            general_add::<Decimal, f32, Decimal>(dec("1.0"), -1f32).unwrap(),
-            dec("0.0")
+            general_add::<Decimal, f32, F64>(dec("1.0"), -1f32).unwrap(),
+            0.0
         );
         assert_eq!(
-            general_sub::<Decimal, f32, Decimal>(dec("1.0"), 1f32).unwrap(),
-            dec("0.0")
+            general_sub::<Decimal, f32, F64>(dec("1.0"), 1f32).unwrap(),
+            0.0
         );
         assert_eq!(
-            general_div::<Decimal, f32, Decimal>(dec("0.0"), 1f32).unwrap(),
-            dec("0.0")
+            general_div::<Decimal, f32, F64>(dec("0.0"), 1f32).unwrap(),
+            0.0
         );
         assert_eq!(
-            general_mul::<Decimal, f32, Decimal>(dec("0.0"), 1f32).unwrap(),
-            dec("0.0")
+            general_mul::<Decimal, f32, F64>(dec("0.0"), 1f32).unwrap(),
+            0.0
         );
         assert_eq!(
-            general_mod::<Decimal, f32, Decimal>(dec("0.0"), 1f32).unwrap(),
-            dec("0.0")
+            general_mod::<Decimal, f32, F64>(dec("0.0"), 1f32).unwrap(),
+            0.0
         );
         assert!(general_add::<i32, F32, F64>(-1i32, 1f32.into())
             .unwrap()

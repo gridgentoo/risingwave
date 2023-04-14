@@ -87,8 +87,7 @@ mod tests {
             (0..ARR_LEN)
                 .map(|x| match x % 3 {
                     0 => Some(Decimal::from(0)),
-                    #[expect(clippy::approx_constant)]
-                    1 => Some(Decimal::from(3.14)),
+                    1 => Some(Decimal::from_str("3.14").unwrap()),
                     2 => None,
                     _ => unreachable!(),
                 })
@@ -97,10 +96,8 @@ mod tests {
                 .map(|x| match x % 5 {
                     0 => Some(Decimal::from(0)),
                     1 => Some(Decimal::from(123)),
-                    #[expect(clippy::approx_constant)]
-                    2 => Some(Decimal::from(3.1415926)),
-                    #[expect(clippy::approx_constant)]
-                    3 => Some(Decimal::from(3.14)),
+                    2 => Some(Decimal::from_str("3.1415926").unwrap()),
+                    3 => Some(Decimal::from_str("3.14").unwrap()),
                     4 => None,
                     _ => unreachable!(),
                 })

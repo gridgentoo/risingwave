@@ -112,6 +112,6 @@ mod tests {
     }
 
     fn dec(f: f64) -> Decimal {
-        Decimal::from(f)
+        Decimal::try_from(f).unwrap()
     }
 }

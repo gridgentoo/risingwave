@@ -351,7 +351,7 @@ pub fn jsonb_to_bool(v: JsonbRef<'_>) -> Result<bool> {
 pub fn jsonb_to_dec(v: JsonbRef<'_>) -> Result<Decimal> {
     v.as_number()
         .map_err(|e| ExprError::Parse(e.into()))
-        .map(Into::into)
+        .and_then(|f| f.try_into().map_err(|_| ExprError::NumericOverflow))
 }
 
 /// Similar to and an result of [`define_cast_to_primitive`] macro above.
@@ -424,8 +424,6 @@ where
 #[function("cast(int32) -> decimal")]
 #[function("cast(int64) -> decimal")]
 #[function("cast(float32) -> float64")]
-#[function("cast(float32) -> decimal")]
-#[function("cast(float64) -> decimal")]
 #[function("cast(date) -> timestamp")]
 #[function("cast(time) -> interval")]
 #[function("cast(varchar) -> varchar")]
@@ -434,6 +432,15 @@ where
     T1: Into<T2>,
 {
     elem.into()
+}
+
+#[function("cast(float32) -> decimal")]
+#[function("cast(float64) -> decimal")]
+pub fn cast_faillable<T1, T2>(elem: T1) -> Result<T2>
+where
+    T1: TryInto<T2>,
+{
+    elem.try_into().map_err(|_| ExprError::CastOutOfRange(""))
 }
 
 #[function("cast(varchar) -> boolean")]
@@ -786,7 +793,10 @@ mod tests {
         test!(general_to_text(F32::from(32.12_f32)), "32.12");
         test!(general_to_text(F32::from(-32.14_f32)), "-32.14");
 
-        test!(general_to_text(Decimal::from(1.222)), "1.222");
+        test!(
+            general_to_text(Decimal::from_str("1.222").unwrap()),
+            "1.222"
+        );
 
         test!(general_to_text(Decimal::NaN), "NaN");
     }
