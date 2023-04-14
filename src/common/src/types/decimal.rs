@@ -235,14 +235,10 @@ impl FromPrimitive for Decimal {
     impl_from_float!([(f32, from_f32), (f64, from_f64)]);
 }
 
-impl_from!(isize, FromPrimitive::from_isize);
-impl_from!(i8, FromPrimitive::from_i8);
 impl_from!(i16, FromPrimitive::from_i16);
 impl_from!(i32, FromPrimitive::from_i32);
 impl_from!(i64, FromPrimitive::from_i64);
 impl_from!(usize, FromPrimitive::from_usize);
-impl_from!(u8, FromPrimitive::from_u8);
-impl_from!(u16, FromPrimitive::from_u16);
 impl_from!(u32, FromPrimitive::from_u32);
 impl_from!(u64, FromPrimitive::from_u64);
 
