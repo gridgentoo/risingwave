@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pg_interval::Interval;
-use rust_decimal::prelude::FromPrimitive;
 use rust_decimal::Decimal;
 use tokio::select;
 use tokio_postgres::types::Type;
@@ -118,11 +119,11 @@ impl TestSuite {
         }
 
         for row in client
-            .query("select $1::DECIMAL;", &[&Decimal::from_f32(2.33454_f32)])
+            .query("select $1::DECIMAL;", &[&Decimal::from_str("2.33454").ok()])
             .await?
         {
             let data: Decimal = row.try_get(0)?;
-            test_eq!(data, Decimal::from_f32(2.33454_f32).unwrap());
+            test_eq!(data, Decimal::from_str("2.33454").unwrap());
         }
 
         for row in client.query("select $1::BOOL;", &[&true]).await? {
