@@ -73,9 +73,12 @@ fn do_parse_simd_json_value(dtype: &DataType, v: &BorrowedValue<'_>) -> Result<S
         }
         DataType::Float64 => simd_json_ensure_float!(v, f64).into(),
         // FIXME: decimal should have more precision than f64
-        DataType::Decimal => Decimal::from_str(ensure_str!(v, "quoted decimal"))
-            .map_err(|_| anyhow!("expect decimal"))?
-            .into(),
+        DataType::Decimal => match v.as_str() {
+            Some(s) => Decimal::from_str(s).ok(),
+            None => Decimal::try_from(simd_json_ensure_float!(v, Decimal)).ok(),
+        }
+        .ok_or_else(|| anyhow!("expect decimal"))?
+        .into(),
         DataType::Varchar => ensure_str!(v, "varchar").to_string().into(),
         DataType::Bytea => ensure_str!(v, "bytea").to_string().into(),
         // debezium converts date to i32 for mysql and postgres
