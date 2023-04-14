@@ -703,7 +703,6 @@ fn struct_cast(
 #[cfg(test)]
 mod tests {
 
-    use num_traits::FromPrimitive;
     use risingwave_common::types::Scalar;
 
     use super::*;
@@ -787,7 +786,7 @@ mod tests {
         test!(general_to_text(F32::from(32.12_f32)), "32.12");
         test!(general_to_text(F32::from(-32.14_f32)), "-32.14");
 
-        test!(general_to_text(Decimal::from_f64(1.222).unwrap()), "1.222");
+        test!(general_to_text(Decimal::from(1.222)), "1.222");
 
         test!(general_to_text(Decimal::NaN), "NaN");
     }
