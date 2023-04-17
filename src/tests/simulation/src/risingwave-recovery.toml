@@ -4,11 +4,11 @@
 
 [meta]
 # a relatively small number to make it easier to timeout
-max_heartbeat_interval_secs = 20
+max_heartbeat_interval_secs = 30
 
-[system]
-barrier_interval_ms = 250
-checkpoint_frequency = 4
-
-[server]
-telemetry_enabled = false
+#[system]
+#barrier_interval_ms = 250
+#checkpoint_frequency = 4
+#
+#[server]
+#telemetry_enabled = false
