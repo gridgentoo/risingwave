@@ -203,6 +203,9 @@ macro_rules! checked_proxy {
 
 impl_try_from_decimal!(Decimal, f32, Decimal::to_f32, "Failed to convert to f32");
 impl_try_from_decimal!(Decimal, f64, Decimal::to_f64, "Failed to convert to f64");
+impl_try_from_decimal!(Decimal, i16, Decimal::to_i16, "Failed to convert to i16");
+impl_try_from_decimal!(Decimal, i32, Decimal::to_i32, "Failed to convert to i32");
+impl_try_from_decimal!(Decimal, i64, Decimal::to_i64, "Failed to convert to i64");
 impl_try_from_float!(f32);
 impl_try_from_float!(f64);
 

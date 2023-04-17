@@ -13,13 +13,12 @@
 // limitations under the License.
 
 use std::any::type_name;
-use std::fmt::{Debug, Write};
+use std::fmt::Write;
 use std::str::FromStr;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::FutureExt;
 use itertools::Itertools;
-use num_traits::ToPrimitive;
 use risingwave_common::array::{
     JsonbRef, ListArray, ListRef, ListValue, StructArray, StructRef, StructValue, Utf8Array,
 };
@@ -28,7 +27,7 @@ use risingwave_common::types::num256::Int256;
 use risingwave_common::types::struct_type::StructType;
 use risingwave_common::types::to_text::ToText;
 use risingwave_common::types::{
-    DataType, Date, Decimal, Interval, ScalarImpl, Time, Timestamp, F32, F64,
+    DataType, Date, Decimal, Interval, IntoOrdered, ScalarImpl, Time, Timestamp, F32, F64,
 };
 use risingwave_common::util::iter_util::ZipEqFast;
 use risingwave_expr_macro::{build_function, function};
@@ -282,34 +281,6 @@ where
 // are admitted, like an `f32` with a decimal part to an integer type, or
 // even a large `f64` saturating to `f32` infinity.
 
-#[function("cast(float32) -> int16")]
-#[function("cast(float64) -> int16")]
-pub fn to_i16<T: ToPrimitive + Debug>(elem: T) -> Result<i16> {
-    elem.to_i16().ok_or(ExprError::CastOutOfRange("i16"))
-}
-
-#[function("cast(float32) -> int32")]
-#[function("cast(float64) -> int32")]
-pub fn to_i32<T: ToPrimitive + Debug>(elem: T) -> Result<i32> {
-    elem.to_i32().ok_or(ExprError::CastOutOfRange("i32"))
-}
-
-#[function("cast(float32) -> int64")]
-#[function("cast(float64) -> int64")]
-pub fn to_i64<T: ToPrimitive + Debug>(elem: T) -> Result<i64> {
-    elem.to_i64().ok_or(ExprError::CastOutOfRange("i64"))
-}
-
-#[function("cast(int32) -> float32")]
-#[function("cast(int64) -> float32")]
-#[function("cast(float64) -> float32")]
-#[function("cast(decimal) -> float32")]
-pub fn to_f32<T: ToPrimitive + Debug>(elem: T) -> Result<F32> {
-    elem.to_f32()
-        .map(Into::into)
-        .ok_or(ExprError::CastOutOfRange("f32"))
-}
-
 #[function("cast(int16) -> int256")]
 #[function("cast(int32) -> int256")]
 #[function("cast(int64) -> int256")]
@@ -318,28 +289,15 @@ pub fn to_int256<T: TryInto<Int256>>(elem: T) -> Result<Int256> {
         .map_err(|_| ExprError::CastOutOfRange("int256"))
 }
 
-#[function("cast(decimal) -> float64")]
-pub fn to_f64<T: ToPrimitive + Debug>(elem: T) -> Result<F64> {
-    elem.to_f64()
-        .map(Into::into)
-        .ok_or(ExprError::CastOutOfRange("f64"))
-}
-
 // In postgresSql, the behavior of casting decimal to integer is rounding.
 // We should write them separately
 #[function("cast(decimal) -> int16")]
-pub fn dec_to_i16(elem: Decimal) -> Result<i16> {
-    to_i16(elem.round_dp(0))
-}
-
 #[function("cast(decimal) -> int32")]
-pub fn dec_to_i32(elem: Decimal) -> Result<i32> {
-    to_i32(elem.round_dp(0))
-}
-
 #[function("cast(decimal) -> int64")]
-pub fn dec_to_i64(elem: Decimal) -> Result<i64> {
-    to_i64(elem.round_dp(0))
+pub fn dec_to_ints<T: TryFrom<Decimal>>(elem: Decimal) -> Result<T> {
+    elem.round_dp(0)
+        .try_into()
+        .map_err(|_| ExprError::CastOutOfRange(type_name::<T>()))
 }
 
 #[function("cast(jsonb) -> boolean")]
@@ -360,24 +318,20 @@ pub fn jsonb_to_dec(v: JsonbRef<'_>) -> Result<Decimal> {
 ///
 /// Note that PostgreSQL casts JSON numbers from arbitrary precision `numeric` but we use `f64`.
 /// This is less powerful but still meets RFC 8259 interoperability.
-macro_rules! define_jsonb_to_number {
-    ($ty:ty, $sig:literal) => {
-        define_jsonb_to_number! { $ty, $ty, $sig }
-    };
-    ($ty:ty, $wrapper_ty:ty, $sig:literal) => {
-        paste::paste! {
-            #[function($sig)]
-            pub fn [<jsonb_to_ $ty>](v: JsonbRef<'_>) -> Result<$wrapper_ty> {
-                v.as_number().map_err(|e| ExprError::Parse(e.into())).and_then([<to_ $ty>])
-            }
-        }
-    };
+#[function("cast(jsonb) -> int16")]
+#[function("cast(jsonb) -> int32")]
+#[function("cast(jsonb) -> int64")]
+#[function("cast(jsonb) -> float32")]
+#[function("cast(jsonb) -> float64")]
+pub fn jsonb_to_number<T: TryFrom<F64>>(v: JsonbRef<'_>) -> Result<T> {
+    v.as_number()
+        .map_err(|e| ExprError::Parse(e.into()))
+        .and_then(|f| {
+            f.into_ordered()
+                .try_into()
+                .map_err(|_| ExprError::NumericOverflow)
+        })
 }
-define_jsonb_to_number! { i16, "cast(jsonb) -> int16" }
-define_jsonb_to_number! { i32, "cast(jsonb) -> int32" }
-define_jsonb_to_number! { i64, "cast(jsonb) -> int64" }
-define_jsonb_to_number! { f32, F32, "cast(jsonb) -> float32" }
-define_jsonb_to_number! { f64, F64, "cast(jsonb) -> float64" }
 
 /// In `PostgreSQL`, casting from timestamp to date discards the time part.
 #[function("cast(timestamp) -> date")]
@@ -434,8 +388,19 @@ where
     elem.into()
 }
 
+#[function("cast(float32) -> int16")]
+#[function("cast(float64) -> int16")]
+#[function("cast(float32) -> int32")]
+#[function("cast(float64) -> int32")]
+#[function("cast(float32) -> int64")]
+#[function("cast(float64) -> int64")]
+#[function("cast(int32) -> float32")]
+#[function("cast(int64) -> float32")]
+#[function("cast(float64) -> float32")]
+#[function("cast(decimal) -> float32")]
 #[function("cast(float32) -> decimal")]
 #[function("cast(float64) -> decimal")]
+#[function("cast(decimal) -> float64")]
 pub fn cast_faillable<T1, T2>(elem: T1) -> Result<T2>
 where
     T1: TryInto<T2>,
