@@ -112,9 +112,16 @@ pub fn new_indexed_with_hasher_in<K: Hash + Eq, V, S: BuildHasher, A: Clone + Al
     alloc: A,
     ghost_cap: usize,
     update_interval: u32,
+    ghost_bucket_count: usize,
 ) -> ManagedIndexedLruCache<K, V, S, A> {
     ManagedIndexedLruCache {
-        inner: IndexedLruCache::unbounded_with_hasher_in(hasher, alloc, ghost_cap, update_interval),
+        inner: IndexedLruCache::unbounded_with_hasher_in(
+            hasher,
+            alloc,
+            ghost_cap,
+            update_interval,
+            ghost_bucket_count,
+        ),
         watermark_epoch,
     }
 }
