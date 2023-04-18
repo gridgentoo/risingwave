@@ -200,7 +200,7 @@ mod tests {
 
     /// numbers are equal within a rounding error
     fn assert_similar(lhs: F64, rhs: F64) {
-        let x = F64::from(lhs.abs() - rhs.abs()).abs().into_inner() <= 0.000000000000001;
+        let x = (lhs.abs() - rhs.abs()).abs().into_inner() <= 0.000000000000001;
         assert!(x);
     }
 
@@ -209,32 +209,26 @@ mod tests {
         let d = F64::from(180);
         let pi = F64::from(PI);
         assert_eq!(cos_f64(pi), cosd_f64(d));
+        assert_similar(cos_f64(F64::from(50).to_radians()), cosd_f64(F64::from(50)));
         assert_similar(
-            cos_f64(F64::from(50).to_radians().into()),
-            cosd_f64(F64::from(50)),
-        );
-        assert_similar(
-            cos_f64(F64::from(100).to_radians().into()),
+            cos_f64(F64::from(100).to_radians()),
             cosd_f64(F64::from(100)),
         );
         assert_similar(
-            cos_f64(F64::from(250).to_radians().into()),
+            cos_f64(F64::from(250).to_radians()),
             cosd_f64(F64::from(250)),
         );
 
         // exact matches
         assert_eq!(cosd_f64(F64::from(0)).0, 1.0);
         assert_eq!(cosd_f64(F64::from(90)).0, 0.0);
+        assert_similar(sin_f64(F64::from(50).to_radians()), sind_f64(F64::from(50)));
         assert_similar(
-            sin_f64(F64::from(50).to_radians().into()),
-            sind_f64(F64::from(50)),
-        );
-        assert_similar(
-            sin_f64(F64::from(100).to_radians().into()),
+            sin_f64(F64::from(100).to_radians()),
             sind_f64(F64::from(100)),
         );
         assert_similar(
-            sin_f64(F64::from(250).to_radians().into()),
+            sin_f64(F64::from(250).to_radians()),
             sind_f64(F64::from(250)),
         );
         assert_similar(sin_f64(pi), sind_f64(d));
@@ -279,7 +273,7 @@ mod tests {
         // https://en.wikipedia.org/wiki/Inverse_trigonometric_functions#Two-argument_variant_of_arctangent
         assert_similar(
             atan2_f64(y, x),
-            two * atan_f64(y / (F64::from(F64::from(x.powi(2) + y.powi(2)).sqrt()) + x)),
+            two * atan_f64(y / ((x.powi(2) + y.powi(2)).sqrt() + x)),
         )
     }
 
