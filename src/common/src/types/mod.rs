@@ -17,7 +17,6 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 use bytes::{Buf, BufMut, Bytes};
-use num_traits::Float;
 use parse_display::{Display, FromStr};
 use postgres_types::FromSql;
 use risingwave_pb::data::data_type::PbTypeName;

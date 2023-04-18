@@ -200,7 +200,7 @@ mod tests {
 
     /// numbers are equal within a rounding error
     fn assert_similar(lhs: F64, rhs: F64) {
-        let x = F64::from(lhs.abs() - rhs.abs()).abs() <= 0.000000000000001;
+        let x = F64::from(lhs.abs() - rhs.abs()).abs().into_inner() <= 0.000000000000001;
         assert!(x);
     }
 

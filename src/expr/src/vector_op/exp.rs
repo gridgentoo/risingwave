@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use num_traits::{Float, Zero};
+use num_traits::Zero;
 use risingwave_common::types::F64;
 use risingwave_expr_macro::function;
 

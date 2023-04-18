@@ -7,6 +7,8 @@ disallowed-methods = [
 disallowed-types = [
     { path = "num_traits::AsPrimitive", reason = "unless you know" },
     { path = "num_traits::FromPrimitive", reason = "unless you know" },
+    { path = "num_traits::ToPrimitive", reason = "unless you know" },
+    { path = "num_traits::NumCast", reason = "unless you know" },
 ]
 doc-valid-idents = [
     "RisingWave",

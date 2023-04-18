@@ -36,7 +36,7 @@ pub fn f64_sec_to_timestamptz(elem: F64) -> Result<i64> {
     // TODO(#4515): handle +/- infinity
     Ok((elem * 1e6)
         .round() // TODO(#5576): should round to even
-        as _)
+        .into_inner() as _)
 }
 
 #[function("at_time_zone(timestamp, varchar) -> timestamptz")]

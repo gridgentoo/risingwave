@@ -16,7 +16,7 @@ use std::convert::TryInto;
 use std::fmt::Debug;
 
 use chrono::{Duration, NaiveDateTime};
-use num_traits::{CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, Float, Signed, Zero};
+use num_traits::{CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, Signed, Zero};
 use risingwave_common::types::{CheckedAdd, Date, Decimal, Interval, Time, Timestamp, F64};
 use risingwave_expr_macro::function;
 use rust_decimal::MathematicalOps;
@@ -505,10 +505,7 @@ mod tests {
         assert!(sqrt_f64(F64::from(-25.00)).is_err());
         // sqrt edge cases.
         assert_eq!(sqrt_f64(F64::from(f64::NAN)).unwrap(), F64::from(f64::NAN));
-        assert_eq!(
-            sqrt_f64(F64::from(f64::neg_zero())).unwrap(),
-            F64::from(f64::neg_zero())
-        );
+        assert_eq!(sqrt_f64(F64::neg_zero()).unwrap(), F64::neg_zero());
         assert_eq!(
             sqrt_f64(F64::from(f64::INFINITY)).unwrap(),
             F64::from(f64::INFINITY)
