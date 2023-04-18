@@ -213,6 +213,7 @@ impl StagingVersion {
 type PrunedVersionLevel = (Vec<usize>, Vec<HummockSstableObjectId>);
 pub struct PrunedVersion {
     table_id: TableId,
+    /// index is only for data with `epoch >= scope`
     scope: HummockEpoch,
     /// mapping from table view position to `(sub_level_id, (SST positions, SST object ids))`
     levels: Vec<(HummockSubLevelId, PrunedVersionLevel)>,
