@@ -271,6 +271,7 @@ impl PrunedVersion {
         cleaned_staging_ssts.sort_by_key(|(epoch, _)| *epoch);
 
         let committed_l0_sub_levels = committed_version.l0_sublevels(self.table_id);
+        // Fresh current `self`. (Because some sub levels in `self` might have been compacted.)
         let mut sub_level_asc_iter = committed_l0_sub_levels.iter().rev().peekable();
         let mut new_levels = vec![];
         for (old_sub_level_id, (_, old_object_ids)) in self
@@ -298,6 +299,7 @@ impl PrunedVersion {
             }
         }
 
+        // Add new sub levels in the latest `HummockVersion` into `self`.
         let mut levels_to_extend = vec![];
         for (idx, sub_level) in committed_l0_sub_levels.iter().enumerate() {
             while let Some((epoch, _)) = cleaned_staging_ssts.last() && epoch > &sub_level.sub_level_id {
@@ -334,6 +336,7 @@ impl PrunedVersion {
 
         new_levels.extend(levels_to_extend.into_iter().rev());
 
+        // Build result.
         let mut ret = vec![];
         for sub_level in committed_l0_sub_levels {
             let sub_level_id = sub_level.get_sub_level_id();
