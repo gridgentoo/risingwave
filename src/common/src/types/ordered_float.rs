@@ -1035,6 +1035,7 @@ mod impl_from {
     impl_from!(i64, f32);
     impl_from!(u8, f32);
     impl_from!(u16, f32);
+    impl_from!(u64, f32);
 
     impl_from!(i8, f64);
     impl_from!(i16, f64);
@@ -1043,6 +1044,7 @@ mod impl_from {
     impl_from!(u8, f64);
     impl_from!(u16, f64);
     impl_from!(u32, f64);
+    impl_from!(u64, f64);
     impl_from!(f32, f64);
 }
 
