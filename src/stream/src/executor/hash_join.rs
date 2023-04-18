@@ -551,7 +551,8 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
 
         let watermark_buffers = BTreeMap::new();
         let hasher = PrecomputedHasher::default();
-
+        let table_id_l = state_table_l.table_id();
+        let table_id_r = state_table_r.table_id();
         Self {
             ctx: ctx.clone(),
             input_l: Some(input_l),
@@ -573,6 +574,7 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     pk_contained_in_jk_l,
                     metrics.clone(),
                     ctx.id,
+                    table_id_l,
                     "left",
                 ),
                 join_key_indices: join_key_indices_l,
@@ -598,6 +600,7 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     pk_contained_in_jk_r,
                     metrics.clone(),
                     ctx.id,
+                    table_id_r,
                     "right",
                 ),
                 join_key_indices: join_key_indices_r,

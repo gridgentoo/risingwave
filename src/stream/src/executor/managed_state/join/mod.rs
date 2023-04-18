@@ -25,6 +25,7 @@ use futures_async_stream::for_await;
 pub(super) use join_entry_state::JoinEntryState;
 use local_stats_alloc::{SharedStatsAlloc, StatsAlloc};
 use risingwave_common::buffer::Bitmap;
+use risingwave_common::catalog::TableId;
 use risingwave_common::collection::estimate_size::EstimateSize;
 use risingwave_common::hash::{HashKey, PrecomputedBuildHasher};
 use risingwave_common::row;
@@ -158,6 +159,7 @@ pub struct JoinHashMapMetrics {
     metrics: Arc<StreamingMetrics>,
     /// Basic information
     actor_id: String,
+    table_id: String,
     side: &'static str,
     /// How many times have we hit the cache of join executor
     lookup_miss_count: usize,
@@ -173,7 +175,12 @@ pub struct JoinHashMapMetrics {
 }
 
 impl JoinHashMapMetrics {
-    pub fn new(metrics: Arc<StreamingMetrics>, actor_id: ActorId, side: &'static str) -> Self {
+    pub fn new(
+        metrics: Arc<StreamingMetrics>,
+        actor_id: ActorId,
+        side: &'static str,
+        table_id: TableId,
+    ) -> Self {
         let mut bucket_ids = vec![];
         for i in 0..=BUCKET_NUMBER {
             bucket_ids.push(i.to_string());
@@ -183,6 +190,7 @@ impl JoinHashMapMetrics {
         Self {
             metrics,
             actor_id: actor_id.to_string(),
+            table_id: table_id.table_id.to_string(),
             side,
             lookup_miss_count: 0,
             lookup_real_miss_count: 0,
@@ -220,14 +228,14 @@ impl JoinHashMapMetrics {
             let count = self.bucket_counts[i];
             self.metrics
                 .cache_real_resue_distance_bucket_count
-                .with_label_values(&[&self.actor_id, self.side, &self.bucket_ids[i]])
+                .with_label_values(&[&self.actor_id, &self.table_id, &self.bucket_ids[i]])
                 .inc_by(count as u64);
             self.bucket_counts[i] = 0;
 
             let ghost_count = self.ghost_bucket_counts[i];
             self.metrics
-                .cache_real_resue_distance_bucket_count
-                .with_label_values(&[&self.actor_id, self.side, &self.bucket_ids[i]])
+                .cache_ghost_resue_distance_bucket_count
+                .with_label_values(&[&self.actor_id, &self.table_id, &self.bucket_ids[i]])
                 .inc_by(ghost_count as u64);
             self.ghost_bucket_counts[i] = 0;
         }
@@ -301,6 +309,7 @@ impl<K: HashKey, S: StateStore> JoinHashMap<K, S> {
         pk_contained_in_jk: bool,
         metrics: Arc<StreamingMetrics>,
         actor_id: ActorId,
+        table_id: TableId,
         side: &'static str,
     ) -> Self {
         let alloc = StatsAlloc::new(Global).shared();
@@ -346,7 +355,7 @@ impl<K: HashKey, S: StateStore> JoinHashMap<K, S> {
             degree_state,
             need_degree_table,
             pk_contained_in_jk,
-            metrics: JoinHashMapMetrics::new(metrics, actor_id, side),
+            metrics: JoinHashMapMetrics::new(metrics, actor_id, side, table_id),
             bucket_size: 1,
             ghost_bucket_size: 1,
             ghost_start: 0,

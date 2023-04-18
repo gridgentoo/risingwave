@@ -431,7 +431,7 @@ impl StreamingMetrics {
         let cache_real_resue_distance_bucket_count = register_int_counter_vec_with_registry!(
             "stream_cache_real_resue_distance_bucket_count",
             "Executor Cache real resue distance count in each bucket",
-            &["actor_id", "side", "bucket_id"],
+            &["actor_id", "table_id", "bucket_id"],
             registry
         )
         .unwrap();
@@ -439,7 +439,7 @@ impl StreamingMetrics {
         let cache_ghost_resue_distance_bucket_count = register_int_counter_vec_with_registry!(
             "stream_cache_ghost_resue_distance_bucket_count",
             "Executor Cache ghost resue distance count in each bucket",
-            &["actor_id", "side", "bucket_id"],
+            &["actor_id", "table_id", "bucket_id"],
             registry
         )
         .unwrap();
