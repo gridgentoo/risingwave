@@ -19,7 +19,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use bytes::{BufMut, Bytes, BytesMut};
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, Zero};
 use postgres_types::{ToSql, Type};
-pub use rust_decimal::prelude::{FromStr, ToPrimitive};
+pub use rust_decimal::prelude::FromStr;
 use rust_decimal::{Decimal as RustDecimal, Error, RoundingStrategy};
 
 use super::to_binary::ToBinary;
@@ -115,30 +115,6 @@ impl ToBinary for Decimal {
     }
 }
 
-macro_rules! impl_to_integer {
-    ([$(($T:ty, $to_int:ident)), *]) => {
-        $(fn $to_int(&self) -> Option<$T> {
-            match self {
-                Self::Normalized(d) => d.$to_int(),
-                _ => None,
-            }
-        })*
-    }
-}
-
-macro_rules! impl_to_float {
-    ([$(($T:ty, $to_float:ident)), *]) => {
-        $(fn $to_float(&self) -> Option<$T> {
-            match self {
-                Self::Normalized(d) => d.$to_float(),
-                Self::NaN => Some(<$T>::NAN),
-                Self::PositiveInf => Some(<$T>::INFINITY),
-                Self::NegativeInf => Some(<$T>::NEG_INFINITY),
-            }
-        })*
-    }
-}
-
 macro_rules! impl_from {
     ($T:ty) => {
         impl core::convert::From<$T> for Decimal {
@@ -151,12 +127,17 @@ macro_rules! impl_from {
 }
 
 macro_rules! impl_try_from_decimal {
-    ($from_ty:ty, $to_ty:ty, $convert:path, $err:expr) => {
-        impl core::convert::TryFrom<$from_ty> for $to_ty {
+    ($to_ty:ty) => {
+        impl core::convert::TryFrom<Decimal> for $to_ty {
             type Error = Error;
 
-            fn try_from(value: $from_ty) -> Result<Self, Self::Error> {
-                $convert(&value).ok_or_else(|| Error::from($err))
+            fn try_from(value: Decimal) -> Result<Self, Self::Error> {
+                match value {
+                    Decimal::Normalized(d) => d.try_into(),
+                    Decimal::NaN | Decimal::PositiveInf | Decimal::NegativeInf => {
+                        Err(Error::ConversionTo("".into()))
+                    }
+                }
             }
         }
     };
@@ -201,11 +182,11 @@ macro_rules! checked_proxy {
     }
 }
 
-impl_try_from_decimal!(Decimal, f32, Decimal::to_f32, "Failed to convert to f32");
-impl_try_from_decimal!(Decimal, f64, Decimal::to_f64, "Failed to convert to f64");
-impl_try_from_decimal!(Decimal, i16, Decimal::to_i16, "Failed to convert to i16");
-impl_try_from_decimal!(Decimal, i32, Decimal::to_i32, "Failed to convert to i32");
-impl_try_from_decimal!(Decimal, i64, Decimal::to_i64, "Failed to convert to i64");
+impl_try_from_decimal!(f32);
+impl_try_from_decimal!(f64);
+impl_try_from_decimal!(i16);
+impl_try_from_decimal!(i32);
+impl_try_from_decimal!(i64);
 impl_try_from_float!(f32);
 impl_try_from_float!(f64);
 
@@ -562,21 +543,6 @@ impl Default for Decimal {
     }
 }
 
-impl ToPrimitive for Decimal {
-    impl_to_integer!([
-        (i64, to_i64),
-        (i32, to_i32),
-        (i16, to_i16),
-        (i8, to_i8),
-        (u64, to_u64),
-        (u32, to_u32),
-        (u16, to_u16),
-        (u8, to_u8)
-    ]);
-
-    impl_to_float!([(f64, to_f64), (f32, to_f32)]);
-}
-
 impl FromStr for Decimal {
     type Err = Error;
 
@@ -652,11 +618,11 @@ mod tests {
         ];
         for (d_lhs, f_lhs) in decimals.iter().zip_eq_fast(floats.iter()) {
             for (d_rhs, f_rhs) in decimals.iter().zip_eq_fast(floats.iter()) {
-                assert!(check((*d_lhs + *d_rhs).to_f32().unwrap(), f_lhs + f_rhs));
-                assert!(check((*d_lhs - *d_rhs).to_f32().unwrap(), f_lhs - f_rhs));
-                assert!(check((*d_lhs * *d_rhs).to_f32().unwrap(), f_lhs * f_rhs));
-                assert!(check((*d_lhs / *d_rhs).to_f32().unwrap(), f_lhs / f_rhs));
-                assert!(check((*d_lhs % *d_rhs).to_f32().unwrap(), f_lhs % f_rhs));
+                assert!(check((*d_lhs + *d_rhs).try_into().unwrap(), f_lhs + f_rhs));
+                assert!(check((*d_lhs - *d_rhs).try_into().unwrap(), f_lhs - f_rhs));
+                assert!(check((*d_lhs * *d_rhs).try_into().unwrap(), f_lhs * f_rhs));
+                assert!(check((*d_lhs / *d_rhs).try_into().unwrap(), f_lhs / f_rhs));
+                assert!(check((*d_lhs % *d_rhs).try_into().unwrap(), f_lhs % f_rhs));
             }
         }
     }
@@ -759,13 +725,8 @@ mod tests {
             ),
             Decimal::try_from(f64::INFINITY).unwrap(),
         );
-        assert_eq!(Decimal::to_u8(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_i8(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_u16(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_i16(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_u32(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_i32(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_u64(&Decimal::from(1)).unwrap(), 1,);
-        assert_eq!(Decimal::to_i64(&Decimal::from(1)).unwrap(), 1,);
+        assert_eq!(i16::try_from(Decimal::from(1)).unwrap(), 1,);
+        assert_eq!(i32::try_from(Decimal::from(1)).unwrap(), 1,);
+        assert_eq!(i64::try_from(Decimal::from(1)).unwrap(), 1,);
     }
 }

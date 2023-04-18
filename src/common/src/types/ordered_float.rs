@@ -1048,13 +1048,13 @@ mod impl_from {
 
 impl From<crate::types::Decimal> for OrderedFloat<f64> {
     fn from(n: crate::types::Decimal) -> Self {
-        n.to_f64().map_or(Self(f64::NAN), Self)
+        n.try_into().map_or(Self(f64::NAN), Self)
     }
 }
 
 impl From<crate::types::Decimal> for OrderedFloat<f32> {
     fn from(n: crate::types::Decimal) -> Self {
-        n.to_f32().map_or(Self(f32::NAN), Self)
+        n.try_into().map_or(Self(f32::NAN), Self)
     }
 }
 
