@@ -244,7 +244,7 @@ impl PrunedVersion {
         }
     }
 
-    /// Construct index for one sub level in `HummockVersion`.
+    /// Construct index for one sub level in `HummockVersion` by local staging SST object ids.
     fn construct_index(
         &self,
         sub_level: &Level,
