@@ -243,6 +243,7 @@ impl PrunedVersion {
         }
     }
 
+    /// Construct index for one sub level in `HummockVersion`.
     fn construct_index(
         &self,
         sub_level: &Level,
