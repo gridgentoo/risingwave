@@ -126,7 +126,7 @@ macro_rules! impl_from {
     };
 }
 
-macro_rules! impl_try_from_decimal {
+macro_rules! impl_try_from_decimal_int {
     ($to_ty:ty) => {
         impl core::convert::TryFrom<Decimal> for $to_ty {
             type Error = Error;
@@ -137,6 +137,22 @@ macro_rules! impl_try_from_decimal {
                     Decimal::NaN | Decimal::PositiveInf | Decimal::NegativeInf => {
                         Err(Error::ConversionTo("".into()))
                     }
+                }
+            }
+        }
+    };
+}
+macro_rules! impl_try_from_decimal_float {
+    ($to_ty:ty) => {
+        impl core::convert::TryFrom<Decimal> for $to_ty {
+            type Error = Error;
+
+            fn try_from(value: Decimal) -> Result<Self, Self::Error> {
+                match value {
+                    Decimal::Normalized(d) => d.try_into(),
+                    Decimal::NaN => Ok(<$to_ty>::NAN),
+                    Decimal::PositiveInf => Ok(<$to_ty>::INFINITY),
+                    Decimal::NegativeInf => Ok(<$to_ty>::NEG_INFINITY),
                 }
             }
         }
@@ -182,11 +198,11 @@ macro_rules! checked_proxy {
     }
 }
 
-impl_try_from_decimal!(f32);
-impl_try_from_decimal!(f64);
-impl_try_from_decimal!(i16);
-impl_try_from_decimal!(i32);
-impl_try_from_decimal!(i64);
+impl_try_from_decimal_float!(f32);
+impl_try_from_decimal_float!(f64);
+impl_try_from_decimal_int!(i16);
+impl_try_from_decimal_int!(i32);
+impl_try_from_decimal_int!(i64);
 impl_try_from_float!(f32);
 impl_try_from_float!(f64);
 
