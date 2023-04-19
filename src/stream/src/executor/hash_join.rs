@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, HashSet};
 use std::hash::Hasher;
 use std::sync::Arc;
@@ -25,7 +26,7 @@ use itertools::Itertools;
 use multimap::MultiMap;
 use risingwave_common::array::{Op, RowRef, StreamChunk};
 use risingwave_common::catalog::Schema;
-use risingwave_common::hash::{HashKey, PrecomputedHasher};
+use risingwave_common::hash::HashKey;
 use risingwave_common::row::{OwnedRow, Row};
 use risingwave_common::types::{DataType, ToOwnedDatum};
 use risingwave_common::util::epoch::EpochPair;
@@ -254,8 +255,6 @@ pub struct HashJoinExecutor<K: HashKey, S: StateStore, const T: JoinTypePrimitiv
 
     /// watermark column index -> `BufferedWatermarks`
     watermark_buffers: BTreeMap<usize, BufferedWatermarks<SideTypePrimitive>>,
-
-    hasher: PrecomputedHasher,
 }
 
 impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> std::fmt::Debug
@@ -550,7 +549,7 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
         let r2o_indexed = MultiMap::from_iter(right_to_output.iter().copied());
 
         let watermark_buffers = BTreeMap::new();
-        let hasher = PrecomputedHasher::default();
+
         let table_id_l = state_table_l.table_id();
         let table_id_r = state_table_r.table_id();
         Self {
@@ -620,7 +619,6 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
             chunk_size,
             cnt_rows_received: 0,
             watermark_buffers,
-            hasher,
         }
     }
 
@@ -672,7 +670,6 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     #[for_await]
                     for chunk in Self::eq_join_oneside::<{ SideType::Left }>(
                         &self.ctx,
-                        &mut self.hasher,
                         &self.identity,
                         &mut self.side_l,
                         &mut self.side_r,
@@ -699,7 +696,6 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     #[for_await]
                     for chunk in Self::eq_join_oneside::<{ SideType::Right }>(
                         &self.ctx,
-                        &mut self.hasher,
                         &self.identity,
                         &mut self.side_l,
                         &mut self.side_r,
@@ -735,17 +731,19 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                     self.side_r.ht.update_epoch(barrier.epoch.curr);
 
                     // Report metrics of cached join rows/entries
-                    for (side, side_bucket, side_ghost_bucket, ht) in [
+                    for (side, side_bucket, side_ghost_bucket, side_ghost_start, ht) in [
                         (
                             "left",
                             "left_bucket",
                             "left_ghost_bucket",
+                            "left_ghost_start",
                             &mut self.side_l.ht,
                         ),
                         (
                             "right",
                             "right_bucket",
                             "right_ghost_bucket",
+                            "right_ghost_start",
                             &mut self.side_r.ht,
                         ),
                     ] {
@@ -770,7 +768,10 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
                             .join_cached_entries
                             .with_label_values(&[&actor_id_str, side_ghost_bucket])
                             .set(ht.ghost_bucket_count() as i64);
-
+                        self.metrics
+                            .join_cached_entries
+                            .with_label_values(&[&actor_id_str, side_ghost_start])
+                            .set(ht.statistic_ghost_start() as i64);
                         ht.update_bucket_size(cache_entry_count);
                         // self.metrics
                         //     .join_cached_estimated_size
@@ -899,7 +900,6 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
     #[expect(clippy::too_many_arguments)]
     async fn eq_join_oneside<'a, const SIDE: SideTypePrimitive>(
         ctx: &'a ActorContextRef,
-        hasher: &'a mut PrecomputedHasher,
         identity: &'a str,
         side_l: &'a mut JoinSide<K, S>,
         side_r: &'a mut JoinSide<K, S>,
@@ -932,7 +932,8 @@ impl<K: HashKey, S: StateStore, const T: JoinTypePrimitive> HashJoinExecutor<K, 
             Self::evict_cache(side_update, side_match, cnt_rows_received);
 
             // let sampled = hasher.hash_one(&key);
-            key.hash(hasher);
+            let mut hasher = DefaultHasher::new();
+            key.hash(&mut hasher);
             let sampled = hasher.finish() % 10000 < SAMPLE_NUM_IN_TEN_K;
 
             let matched_rows: Option<HashValueType> =

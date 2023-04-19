@@ -170,8 +170,8 @@ pub struct JoinHashMapMetrics {
     may_exist_true_count: usize,
 
     bucket_ids: Vec<String>,
-    bucket_counts: Vec<u32>,
-    ghost_bucket_counts: Vec<u32>,
+    bucket_counts: Vec<usize>,
+    ghost_bucket_counts: Vec<usize>,
 }
 
 impl JoinHashMapMetrics {
@@ -185,8 +185,8 @@ impl JoinHashMapMetrics {
         for i in 0..=BUCKET_NUMBER {
             bucket_ids.push(i.to_string());
         }
-        let bucket_counts = vec![0; BUCKET_NUMBER];
-        let ghost_bucket_counts = vec![0; BUCKET_NUMBER];
+        let bucket_counts = vec![0; BUCKET_NUMBER + 1];
+        let ghost_bucket_counts = vec![0; BUCKET_NUMBER + 1];
         Self {
             metrics,
             actor_id: actor_id.to_string(),
@@ -228,14 +228,29 @@ impl JoinHashMapMetrics {
             let count = self.bucket_counts[i];
             self.metrics
                 .cache_real_resue_distance_bucket_count
-                .with_label_values(&[&self.actor_id, &self.table_id, &self.bucket_ids[i]])
+                .with_label_values(&[
+                    &self.actor_id,
+                    &self.table_id,
+                    self.side,
+                    &self.bucket_ids[i],
+                ])
                 .inc_by(count as u64);
             self.bucket_counts[i] = 0;
 
-            let ghost_count = self.ghost_bucket_counts[i];
+            let mut ghost_count = self.ghost_bucket_counts[i];
+            if i == BUCKET_NUMBER {
+                assert!(self.lookup_miss_count >= self.lookup_real_miss_count);
+                assert!(ghost_count >= (self.lookup_miss_count - self.lookup_real_miss_count));
+                ghost_count -= self.lookup_miss_count - self.lookup_real_miss_count;
+            }
             self.metrics
                 .cache_ghost_resue_distance_bucket_count
-                .with_label_values(&[&self.actor_id, &self.table_id, &self.bucket_ids[i]])
+                .with_label_values(&[
+                    &self.actor_id,
+                    &self.table_id,
+                    self.side,
+                    &self.bucket_ids[i],
+                ])
                 .inc_by(ghost_count as u64);
             self.ghost_bucket_counts[i] = 0;
         }
@@ -739,13 +754,26 @@ impl<K: HashKey, S: StateStore> JoinHashMap<K, S> {
     pub fn update_bucket_size(&mut self, entry_count: usize) {
         let old_entry_count = self.bucket_size * BUCKET_NUMBER;
         if old_entry_count as f64 * 1.2 < entry_count as f64
-            || old_entry_count as f64 * 0.8 > entry_count as f64
+            || old_entry_count as f64 * 0.7 > entry_count as f64
         {
-            self.bucket_size = (entry_count as f64 * 1.1 / BUCKET_NUMBER as f64).round() as usize;
-            self.ghost_bucket_size = ((entry_count as f64 * 0.3 + GHOST_CAP as f64)
-                / BUCKET_NUMBER as f64)
-                .round() as usize;
-            self.ghost_start = (entry_count as f64 * 0.8).round() as usize;
+            self.bucket_size = std::cmp::max(
+                (entry_count as f64 * 1.1 / BUCKET_NUMBER as f64).round() as usize,
+                1,
+            );
+            self.ghost_bucket_size = std::cmp::max(
+                ((entry_count as f64 * 0.3 + GHOST_CAP as f64) / BUCKET_NUMBER as f64).round()
+                    as usize,
+                1,
+            );
+            self.ghost_start = std::cmp::max((entry_count as f64 * 0.8).round() as usize, 1);
+            info!(
+                "WKXLOG ghost_start switch to {}, old_entry_count: {}, new_entry_count: {}",
+                self.ghost_start, old_entry_count, entry_count
+            );
         }
+    }
+
+    pub fn statistic_ghost_start(&self) -> usize {
+        self.ghost_start
     }
 }
