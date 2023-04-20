@@ -17,15 +17,11 @@ use std::hash::Hash;
 use postgres_types::{ToSql as _, Type};
 use serde::{Serialize, Serializer};
 
-use crate::array::{PrimitiveArray, PrimitiveArrayBuilder};
 use crate::util::row_id::RowId;
 
 // Serial is an alias for i64
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Ord, PartialOrd, Default, Hash)]
 pub struct Serial(i64);
-
-pub type SerialArray = PrimitiveArray<Serial>;
-pub type SerialArrayBuilder = PrimitiveArrayBuilder<Serial>;
 
 impl From<i64> for Serial {
     fn from(value: i64) -> Self {
