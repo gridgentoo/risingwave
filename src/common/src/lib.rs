@@ -34,6 +34,7 @@
 #![allow(incomplete_features)]
 #![feature(const_option_ext)]
 #![feature(iterator_try_collect)]
+#![feature(specialization)]
 
 #[macro_use]
 pub mod jemalloc;

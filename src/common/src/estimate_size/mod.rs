@@ -86,6 +86,15 @@ impl<T: EstimateSize> EstimateSize for HashSet<T> {
     }
 }
 
+// FIXME: implement a wrapper structure for `Vec` that impl `EstimateSize`
+impl<T: EstimateSize> EstimateSize for Vec<T> {
+    default fn estimated_heap_size(&self) -> usize {
+        // FIXME: implement correct size
+        // https://github.com/risingwavelabs/risingwave/issues/8957
+        0
+    }
+}
+
 macro_rules! primitive_estimate_size_impl {
     ($($t:ty)*) => ($(
         impl EstimateSize for $t {
