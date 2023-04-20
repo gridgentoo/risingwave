@@ -21,14 +21,13 @@ use futures_util::FutureExt;
 use itertools::Itertools;
 use num_traits::ToPrimitive;
 use risingwave_common::array::{
-    JsonbRef, ListArray, ListRef, ListValue, StructArray, StructRef, StructValue, Utf8Array,
+    ListArray, ListRef, ListValue, StructArray, StructRef, StructValue, Utf8Array,
 };
 use risingwave_common::row::OwnedRow;
-use risingwave_common::types::num256::Int256;
 use risingwave_common::types::struct_type::StructType;
 use risingwave_common::types::to_text::ToText;
 use risingwave_common::types::{
-    DataType, Date, Decimal, Interval, ScalarImpl, Time, Timestamp, F32, F64,
+    DataType, Date, Decimal, Int256, Interval, JsonbRef, ScalarImpl, Time, Timestamp, F32, F64,
 };
 use risingwave_common::util::iter_util::ZipEqFast;
 use risingwave_expr_macro::{build_function, function};
