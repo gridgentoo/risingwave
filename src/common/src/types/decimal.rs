@@ -163,11 +163,11 @@ macro_rules! impl_from_float {
 }
 
 macro_rules! impl_from {
-    ($T:ty, $from_ty:path) => {
+    ($T:ty) => {
         impl core::convert::From<$T> for Decimal {
             #[inline]
             fn from(t: $T) -> Self {
-                $from_ty(t).unwrap()
+                Self::Normalized(t.into())
             }
         }
     };
@@ -231,12 +231,12 @@ impl FromPrimitive for Decimal {
     impl_from_float!([(f32, from_f32), (f64, from_f64)]);
 }
 
-impl_from!(i16, FromPrimitive::from_i16);
-impl_from!(i32, FromPrimitive::from_i32);
-impl_from!(i64, FromPrimitive::from_i64);
-impl_from!(usize, FromPrimitive::from_usize);
-impl_from!(u32, FromPrimitive::from_u32);
-impl_from!(u64, FromPrimitive::from_u64);
+impl_from!(i16);
+impl_from!(i32);
+impl_from!(i64);
+impl_from!(usize);
+impl_from!(u32);
+impl_from!(u64);
 
 checked_proxy!(CheckedRem, checked_rem, %);
 checked_proxy!(CheckedSub, checked_sub, -);
