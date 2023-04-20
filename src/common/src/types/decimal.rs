@@ -173,18 +173,6 @@ macro_rules! impl_from {
     };
 }
 
-macro_rules! impl_try_from_decimal {
-    ($from_ty:ty, $to_ty:ty, $convert:path, $err:expr) => {
-        impl core::convert::TryFrom<$from_ty> for $to_ty {
-            type Error = Error;
-
-            fn try_from(value: $from_ty) -> Result<Self, Self::Error> {
-                $convert(&value).ok_or_else(|| Error::from($err))
-            }
-        }
-    };
-}
-
 macro_rules! impl_try_from_float {
     ($from_ty:ty, $to_ty:ty, $convert:path) => {
         impl core::convert::TryFrom<$from_ty> for $to_ty {
@@ -219,8 +207,6 @@ macro_rules! checked_proxy {
     }
 }
 
-impl_try_from_decimal!(Decimal, f32, Decimal::to_f32, "Failed to convert to f32");
-impl_try_from_decimal!(Decimal, f64, Decimal::to_f64, "Failed to convert to f64");
 impl_try_from_float!(f32, Decimal, Decimal::from_f32);
 impl_try_from_float!(f64, Decimal, Decimal::from_f64);
 
@@ -245,14 +231,10 @@ impl FromPrimitive for Decimal {
     impl_from_float!([(f32, from_f32), (f64, from_f64)]);
 }
 
-impl_from!(isize, FromPrimitive::from_isize);
-impl_from!(i8, FromPrimitive::from_i8);
 impl_from!(i16, FromPrimitive::from_i16);
 impl_from!(i32, FromPrimitive::from_i32);
 impl_from!(i64, FromPrimitive::from_i64);
 impl_from!(usize, FromPrimitive::from_usize);
-impl_from!(u8, FromPrimitive::from_u8);
-impl_from!(u16, FromPrimitive::from_u16);
 impl_from!(u32, FromPrimitive::from_u32);
 impl_from!(u64, FromPrimitive::from_u64);
 
