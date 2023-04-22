@@ -1132,7 +1132,7 @@ where
             }
         }
 
-        debug_assert!(
+        assert!(
             compact_task.task_status() != TaskStatus::Pending,
             "report pending compaction task"
         );

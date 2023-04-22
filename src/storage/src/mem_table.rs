@@ -257,7 +257,7 @@ pub(crate) async fn merge_stream<'a>(
                 }
             }
             (Some(Ok((inner_key, _))), Some((mem_table_key, _))) => {
-                debug_assert_eq!(inner_key.user_key.table_id, table_id);
+                assert_eq!(inner_key.user_key.table_id, table_id);
                 match inner_key.user_key.table_key.0.cmp(mem_table_key) {
                     Ordering::Less => {
                         // yield data from storage
@@ -276,7 +276,7 @@ pub(crate) async fn merge_stream<'a>(
                             }
                             KeyOp::Delete(_) => {}
                             KeyOp::Update((old_value, new_value)) => {
-                                debug_assert!(old_value == &old_value_in_inner);
+                                assert!(old_value == &old_value_in_inner);
 
                                 yield (key, new_value.clone());
                             }
@@ -396,7 +396,7 @@ impl<S: StateStoreWrite + StateStoreRead> LocalStateStore for MemtableLocalState
 
     fn flush(&mut self, delete_ranges: Vec<(Bytes, Bytes)>) -> Self::FlushFuture<'_> {
         async move {
-            debug_assert!(delete_ranges.iter().map(|(key, _)| key).is_sorted());
+            assert!(delete_ranges.iter().map(|(key, _)| key).is_sorted());
             let buffer = self.mem_table.drain().into_parts();
             let mut kv_pairs = Vec::with_capacity(buffer.len());
             for (key, key_op) in filter_with_delete_range(buffer.into_iter(), delete_ranges.iter())

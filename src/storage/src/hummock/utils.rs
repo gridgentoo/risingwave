@@ -142,7 +142,7 @@ pub fn prune_nonoverlapping_ssts<'a>(
     ssts: &'a [SstableInfo],
     user_key_range: (Bound<UserKey<&'a [u8]>>, Bound<UserKey<&'a [u8]>>),
 ) -> impl DoubleEndedIterator<Item = &'a SstableInfo> {
-    debug_assert!(can_concat(ssts));
+    assert!(can_concat(ssts));
     let start_table_idx = match user_key_range.0 {
         Included(key) | Excluded(key) => search_sst_idx(ssts, key).saturating_sub(1),
         _ => 0,

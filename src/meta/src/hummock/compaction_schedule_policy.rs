@@ -268,7 +268,7 @@ impl ScoredPolicy {
         compact_task: &CompactTask,
     ) {
         let new_score = old_score + Self::calculate_score_delta(compact_task);
-        debug_assert!(new_score >= 0);
+        assert!(new_score >= 0);
 
         if let Some(compactor) = self.score_to_compactor.remove(&(old_score, context_id)) {
             self.score_to_compactor
@@ -389,7 +389,7 @@ impl CompactionSchedulePolicy for ScoredPolicy {
     }
 
     fn report_compact_task(&mut self, context_id: HummockContextId, task: &CompactTask) {
-        debug_assert_ne!(task.task_status(), TaskStatus::Pending);
+        assert_ne!(task.task_status(), TaskStatus::Pending);
         if let Some(score) = self.context_id_to_score.get(&context_id) {
             self.update_compactor_score(context_id, *score, task);
         }

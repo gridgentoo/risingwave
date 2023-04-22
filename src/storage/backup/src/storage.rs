@@ -104,8 +104,8 @@ impl ObjectStoreMetaSnapshotStorage {
     #[allow(dead_code)]
     fn get_snapshot_id_from_path(path: &str) -> MetaSnapshotId {
         let split = path.split(&['/', '.']).collect_vec();
-        debug_assert!(split.len() > 2);
-        debug_assert!(split[split.len() - 1] == "snapshot");
+        assert!(split.len() > 2);
+        assert!(split[split.len() - 1] == "snapshot");
         split[split.len() - 2]
             .parse::<MetaSnapshotId>()
             .expect("valid meta snapshot id")

@@ -171,7 +171,7 @@ impl Block {
                 decoder
                     .read_to_end(&mut decoded)
                     .map_err(HummockError::decode_error)?;
-                debug_assert_eq!(decoded.capacity(), uncompressed_capacity);
+                assert_eq!(decoded.capacity(), uncompressed_capacity);
                 Bytes::from(decoded)
             }
             CompressionAlgorithm::Zstd => {
@@ -181,7 +181,7 @@ impl Block {
                 decoder
                     .read_to_end(&mut decoded)
                     .map_err(HummockError::decode_error)?;
-                debug_assert_eq!(decoded.capacity(), uncompressed_capacity);
+                assert_eq!(decoded.capacity(), uncompressed_capacity);
                 Bytes::from(decoded)
             }
         };
@@ -439,7 +439,7 @@ impl BlockBuilder {
     pub fn add(&mut self, full_key: FullKey<&[u8]>, value: &[u8]) {
         let input_table_id = full_key.user_key.table_id.table_id();
         match self.table_id {
-            Some(current_table_id) => debug_assert_eq!(current_table_id, input_table_id),
+            Some(current_table_id) => assert_eq!(current_table_id, input_table_id),
             None => self.table_id = Some(input_table_id),
         }
         #[cfg(debug_assertions)]
@@ -448,8 +448,8 @@ impl BlockBuilder {
         let mut key: BytesMut = Default::default();
         full_key.encode_into_without_table_id(&mut key);
         if self.entry_count > 0 {
-            debug_assert!(!key.is_empty());
-            debug_assert_eq!(
+            assert!(!key.is_empty());
+            assert_eq!(
                 KeyComparator::compare_encoded_full_key(&self.last_key[..], &key[..]),
                 Ordering::Less
             );
@@ -626,10 +626,10 @@ impl BlockBuilder {
 
     pub fn debug_valid(&self) {
         if self.entry_count == 0 {
-            debug_assert!(self.buf.is_empty());
-            debug_assert!(self.restart_points.is_empty());
-            debug_assert!(self.restart_points_type_index.is_empty());
-            debug_assert!(self.last_key.is_empty());
+            assert!(self.buf.is_empty());
+            assert!(self.restart_points.is_empty());
+            assert!(self.restart_points_type_index.is_empty());
+            assert!(self.last_key.is_empty());
         }
     }
 }

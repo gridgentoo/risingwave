@@ -119,9 +119,9 @@ impl SharedBufferBatchInner {
         size: usize,
         tracker: Option<MemoryTracker>,
     ) -> Self {
-        debug_assert!(!imm_ids.is_empty());
-        debug_assert!(!epochs.is_empty());
-        debug_assert!(epochs.is_sorted());
+        assert!(!imm_ids.is_empty());
+        assert!(!epochs.is_empty());
+        assert!(epochs.is_sorted());
 
         let (smallest_empty, mut smallest_table_key, mut largest_table_key, range_tombstones) =
             Self::get_table_key_ends(range_tombstone_list);
@@ -372,7 +372,7 @@ impl SharedBufferBatch {
     }
 
     pub fn get_imm_ids(&self) -> &Vec<ImmId> {
-        debug_assert!(!self.inner.imm_ids.is_empty());
+        assert!(!self.inner.imm_ids.is_empty());
         &self.inner.imm_ids
     }
 
@@ -570,7 +570,7 @@ impl<D: HummockIteratorDirection> SharedBufferBatchIterator<D> {
 
     /// Return all values of the current key
     pub(crate) fn current_versions(&self) -> &Vec<(HummockEpoch, HummockValue<Bytes>)> {
-        debug_assert!(self.current_idx < self.inner.len());
+        assert!(self.current_idx < self.inner.len());
         let idx = match D::direction() {
             DirectionEnum::Forward => self.current_idx,
             DirectionEnum::Backward => self.inner.len() - self.current_idx - 1,
@@ -670,7 +670,7 @@ impl<D: HummockIteratorDirection> HummockIterator for SharedBufferBatchIterator<
 
     fn seek<'a>(&'a mut self, key: FullKey<&'a [u8]>) -> Self::SeekFuture<'a> {
         async move {
-            debug_assert_eq!(key.user_key.table_id, self.table_id);
+            assert_eq!(key.user_key.table_id, self.table_id);
             // Perform binary search on table key because the items in SharedBufferBatch is ordered
             // by table key.
             let partition_point = self

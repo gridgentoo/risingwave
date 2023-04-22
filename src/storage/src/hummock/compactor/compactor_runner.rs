@@ -159,7 +159,7 @@ impl CompactorRunner {
 
             // Do not need to filter the table because manager has done it.
             if level.level_type == LevelType::Nonoverlapping as i32 {
-                debug_assert!(can_concat(&level.table_infos));
+                assert!(can_concat(&level.table_infos));
                 let tables = level
                     .table_infos
                     .iter()

@@ -733,7 +733,7 @@ impl SstableWriter for StreamingUploadWriter {
 
             // Add block cache.
             if let CachePolicy::Fill(fill_high_priority_cache) = self.policy {
-                debug_assert!(!self.blocks.is_empty());
+                assert!(!self.blocks.is_empty());
                 for (block_idx, block) in self.blocks.into_iter().enumerate() {
                     self.sstable_store.block_cache.insert(
                         self.object_id,

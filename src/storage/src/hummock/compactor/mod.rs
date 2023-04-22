@@ -450,7 +450,7 @@ impl Compactor {
 
                         _ = workload_collect_interval.tick() => {
                             let refresh_result = system.refresh_process_specifics(pid, ProcessRefreshKind::new().with_cpu());
-                            debug_assert!(refresh_result);
+                            assert!(refresh_result);
                             let cpu = if let Some(process) = system.process(pid) {
                                 process.cpu_usage().div(cpu_core_num as f32) as u32
                             } else {
@@ -792,7 +792,7 @@ impl Compactor {
             .get_table_id_total_time_duration
             .observe(self.get_id_time.load(Ordering::Relaxed) as f64 / 1000.0 / 1000.0);
 
-        debug_assert!(ssts
+        assert!(ssts
             .iter()
             .all(|table_info| table_info.sst_info.get_table_ids().is_sorted()));
         Ok((ssts, table_stats_map))

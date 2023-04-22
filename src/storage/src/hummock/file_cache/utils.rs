@@ -61,7 +61,7 @@ pub fn assert_aligned<U: Unsigned>(align: U, v: U) {
 #[inline(always)]
 pub fn debug_assert_aligned<U: Unsigned>(align: U, v: U) {
     debug_assert_pow2(align);
-    debug_assert!(is_aligned(align, v), "align: {}, v: {}", align, v);
+    assert!(is_aligned(align, v), "align: {}, v: {}", align, v);
 }
 
 #[inline(always)]

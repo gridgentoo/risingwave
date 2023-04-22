@@ -238,7 +238,7 @@ impl LocalStateStore for LocalHummockStorage {
 
     fn flush(&mut self, delete_ranges: Vec<(Bytes, Bytes)>) -> Self::FlushFuture<'_> {
         async move {
-            debug_assert!(delete_ranges.iter().map(|(key, _)| key).is_sorted());
+            assert!(delete_ranges.iter().map(|(key, _)| key).is_sorted());
             let buffer = self.mem_table.drain().into_parts();
             let mut kv_pairs = Vec::with_capacity(buffer.len());
             for (key, key_op) in filter_with_delete_range(buffer.into_iter(), delete_ranges.iter())

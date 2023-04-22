@@ -388,7 +388,7 @@ impl SealedData {
     }
 
     fn add_merged_imm(&mut self, merged_imm: &ImmutableMemtable) {
-        debug_assert!(merged_imm.is_merged_imm());
+        assert!(merged_imm.is_merged_imm());
         // add merged_imm to merged_imms
         self.merged_imms.push_front(merged_imm.clone());
     }
@@ -414,7 +414,7 @@ impl SealedData {
         let mut imms_by_epoch: BTreeMap<HummockEpoch, Vec<ImmutableMemtable>> = BTreeMap::new();
         self.imms_by_table_shard.drain().for_each(|(_, imms)| {
             for imm in imms {
-                debug_assert!(imm.max_epoch() == imm.min_epoch());
+                assert!(imm.max_epoch() == imm.min_epoch());
                 imms_by_epoch.entry(imm.max_epoch()).or_default().push(imm);
             }
         });
@@ -478,7 +478,7 @@ impl SealedData {
         let mut imms_by_epoch: BTreeMap<HummockEpoch, Vec<ImmutableMemtable>> = BTreeMap::new();
         self.imms_by_table_shard.iter().for_each(|(_, imms)| {
             for imm in imms {
-                debug_assert!(imm.max_epoch() == imm.min_epoch());
+                assert!(imm.max_epoch() == imm.min_epoch());
                 imms_by_epoch
                     .entry(imm.max_epoch())
                     .or_default()

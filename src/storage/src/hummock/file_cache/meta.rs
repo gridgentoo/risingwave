@@ -175,7 +175,7 @@ where
     }
 
     pub fn free(&mut self, slot: SlotId) -> Option<BlockLoc> {
-        debug_assert!(
+        assert!(
             (slot + 1) * Self::slot_info_len() <= self.size,
             "slot: {}, offset: {}, size: {}",
             slot,
@@ -198,7 +198,7 @@ where
     }
 
     pub fn get(&self, slot: SlotId) -> Option<(BlockLoc, K)> {
-        debug_assert!(
+        assert!(
             (slot + 1) * Self::slot_info_len() <= self.size,
             "slot: {}, offset: {}, size: {}",
             slot,
