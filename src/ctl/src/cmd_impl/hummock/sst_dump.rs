@@ -59,6 +59,8 @@ pub struct SstDumpArgs {
     print_table: bool,
     #[clap(short = 'd')]
     data_dir: Option<String>,
+    #[clap(long)]
+    state_table_id: Option<u32>,
 }
 
 pub async fn sst_dump(context: &CtlContext, args: SstDumpArgs) -> anyhow::Result<()> {
@@ -94,6 +96,11 @@ pub async fn sst_dump(context: &CtlContext, args: SstDumpArgs) -> anyhow::Result
                     }
                 } else {
                     print_level(level, sstable_info);
+                    if let Some(state_table_id) = &args.state_table_id {
+                        if !sstable_info.table_ids.contains(state_table_id) {
+                            continue;
+                        }
+                    }
                     sst_dump_via_sstable_store(
                         &sstable_store,
                         sstable_info.get_object_id(),
