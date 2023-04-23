@@ -237,6 +237,24 @@ impl_from!(usize);
 impl_from!(u32);
 impl_from!(u64);
 
+macro_rules! impl_try_from_decimal_for_integer {
+    ($T:ty) => {
+        impl core::convert::TryFrom<Decimal> for $T {
+            type Error = Error;
+
+            fn try_from(value: Decimal) -> Result<Self, Self::Error> {
+                match value {
+                    Decimal::Normalized(d) => d.try_into(),
+                    _ => Err(Error::ConversionTo("".into())),
+                }
+            }
+        }
+    };
+}
+impl_try_from_decimal_for_integer!(i16);
+impl_try_from_decimal_for_integer!(i32);
+impl_try_from_decimal_for_integer!(i64);
+
 checked_proxy!(CheckedRem, checked_rem, %);
 checked_proxy!(CheckedSub, checked_sub, -);
 checked_proxy!(CheckedAdd, checked_add, +);
