@@ -433,6 +433,7 @@ impl SpecificParserConfig {
                     info.use_schema_registry,
                     false,
                     None,
+                    false,
                 )
                 .await?,
             ),
@@ -447,6 +448,8 @@ impl SpecificParserConfig {
                     } else {
                         Some(info.upsert_avro_primary_key.to_string())
                     },
+                    // FIXME: review later
+                    false,
                 )
                 .await?,
             ),
