@@ -211,7 +211,24 @@ impl_try_from_float!(f64);
 
 impl From<crate::types::Decimal> for OrderedFloat<f64> {
     fn from(n: crate::types::Decimal) -> Self {
-        n.to_f64().map_or(Self(f64::NAN), Self)
+        let inner = match n {
+            Decimal::Normalized(d) => d.try_into().unwrap_or(f64::NAN),
+            Decimal::NaN => f64::NAN,
+            Decimal::PositiveInf => f64::INFINITY,
+            Decimal::NegativeInf => f64::NEG_INFINITY,
+        };
+        Self(inner)
+    }
+}
+impl From<crate::types::Decimal> for OrderedFloat<f32> {
+    fn from(n: crate::types::Decimal) -> Self {
+        let inner = match n {
+            Decimal::Normalized(d) => d.try_into().unwrap_or(f32::NAN),
+            Decimal::NaN => f32::NAN,
+            Decimal::PositiveInf => f32::INFINITY,
+            Decimal::NegativeInf => f32::NEG_INFINITY,
+        };
+        Self(inner)
     }
 }
 
