@@ -174,19 +174,18 @@ macro_rules! impl_from {
 }
 
 macro_rules! impl_try_from_float {
-    ($from_ty:ty, $to_ty:ty, $convert:path) => {
-        impl core::convert::TryFrom<$from_ty> for $to_ty {
-            type Error = Error;
-
-            fn try_from(value: $from_ty) -> Result<Self, Self::Error> {
-                $convert(value).ok_or_else(|| Error::ConversionTo("".into()))
-            }
-        }
-        impl core::convert::TryFrom<OrderedFloat<$from_ty>> for $to_ty {
+    ($from_ty:ty) => {
+        impl core::convert::TryFrom<OrderedFloat<$from_ty>> for Decimal {
             type Error = Error;
 
             fn try_from(value: OrderedFloat<$from_ty>) -> Result<Self, Self::Error> {
-                $convert(value.0).ok_or_else(|| Error::ConversionTo("".into()))
+                let num = value.0;
+                match num {
+                    num if num.is_nan() => Ok(Decimal::NaN),
+                    num if num.is_infinite() && num.is_sign_positive() => Ok(Decimal::PositiveInf),
+                    num if num.is_infinite() && num.is_sign_negative() => Ok(Decimal::NegativeInf),
+                    num => Ok(Decimal::Normalized(num.try_into()?)),
+                }
             }
         }
     };
@@ -207,8 +206,8 @@ macro_rules! checked_proxy {
     }
 }
 
-impl_try_from_float!(f32, Decimal, Decimal::from_f32);
-impl_try_from_float!(f64, Decimal, Decimal::from_f64);
+impl_try_from_float!(f32);
+impl_try_from_float!(f64);
 
 impl From<crate::types::Decimal> for OrderedFloat<f64> {
     fn from(n: crate::types::Decimal) -> Self {

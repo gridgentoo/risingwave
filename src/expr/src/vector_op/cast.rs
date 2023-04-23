@@ -28,7 +28,7 @@ use risingwave_common::types::num256::Int256;
 use risingwave_common::types::struct_type::StructType;
 use risingwave_common::types::to_text::ToText;
 use risingwave_common::types::{
-    DataType, Date, Decimal, Interval, ScalarImpl, Time, Timestamp, F32, F64,
+    DataType, Date, Decimal, Interval, IntoOrdered, ScalarImpl, Time, Timestamp, F32, F64,
 };
 use risingwave_common::util::iter_util::ZipEqFast;
 use risingwave_expr_macro::{build_function, function};
@@ -353,6 +353,7 @@ pub fn jsonb_to_bool(v: JsonbRef<'_>) -> Result<bool> {
 pub fn jsonb_to_dec(v: JsonbRef<'_>) -> Result<Decimal> {
     v.as_number()
         .map_err(|e| ExprError::Parse(e.into()))?
+        .into_ordered()
         .try_into()
         .map_err(|_| ExprError::NumericOutOfRange)
 }
