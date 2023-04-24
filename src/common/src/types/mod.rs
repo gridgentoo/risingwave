@@ -17,7 +17,6 @@ use std::hash::Hash;
 use std::sync::Arc;
 
 use bytes::{Buf, BufMut, Bytes};
-use num_traits::Float;
 use parse_display::{Display, FromStr};
 use postgres_types::FromSql;
 use risingwave_pb::data::data_type::PbTypeName;
@@ -56,7 +55,7 @@ pub use decimal::Decimal;
 pub use interval::*;
 use itertools::Itertools;
 pub use ops::{CheckedAdd, IsNegative};
-pub use ordered_float::IntoOrdered;
+pub use ordered_float::{FloatExt, IntoOrdered};
 use paste::paste;
 use postgres_types::{IsNull, ToSql, Type};
 use strum_macros::EnumDiscriminants;

@@ -19,7 +19,7 @@ use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use bytes::{BufMut, Bytes, BytesMut};
 use num_traits::{CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, Zero};
 use postgres_types::{ToSql, Type};
-pub use rust_decimal::prelude::{FromStr, ToPrimitive};
+pub use rust_decimal::prelude::FromStr;
 use rust_decimal::{Decimal as RustDecimal, Error, RoundingStrategy};
 
 use super::to_binary::ToBinary;
@@ -112,30 +112,6 @@ impl ToBinary for Decimal {
             }
             _ => unreachable!(),
         }
-    }
-}
-
-macro_rules! impl_to_integer {
-    ([$(($T:ty, $to_int:ident)), *]) => {
-        $(fn $to_int(&self) -> Option<$T> {
-            match self {
-                Self::Normalized(d) => d.$to_int(),
-                _ => None,
-            }
-        })*
-    }
-}
-
-macro_rules! impl_to_float {
-    ([$(($T:ty, $to_float:ident)), *]) => {
-        $(fn $to_float(&self) -> Option<$T> {
-            match self {
-                Self::Normalized(d) => d.$to_float(),
-                Self::NaN => Some(<$T>::NAN),
-                Self::PositiveInf => Some(<$T>::INFINITY),
-                Self::NegativeInf => Some(<$T>::NEG_INFINITY),
-            }
-        })*
     }
 }
 
@@ -580,21 +556,6 @@ impl Default for Decimal {
     }
 }
 
-impl ToPrimitive for Decimal {
-    impl_to_integer!([
-        (i64, to_i64),
-        (i32, to_i32),
-        (i16, to_i16),
-        (i8, to_i8),
-        (u64, to_u64),
-        (u32, to_u32),
-        (u16, to_u16),
-        (u8, to_u8)
-    ]);
-
-    impl_to_float!([(f64, to_f64), (f32, to_f32)]);
-}
-
 impl FromStr for Decimal {
     type Err = Error;
 
@@ -630,54 +591,7 @@ impl From<RustDecimal> for Decimal {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use crate::util::iter_util::ZipEqFast;
-
-    fn check(lhs: f32, rhs: f32) -> bool {
-        if lhs.is_nan() && rhs.is_nan() {
-            true
-        } else if lhs.is_infinite() && rhs.is_infinite() {
-            if lhs.is_sign_positive() && rhs.is_sign_positive() {
-                true
-            } else {
-                lhs.is_sign_negative() && rhs.is_sign_negative()
-            }
-        } else if lhs.is_finite() && rhs.is_finite() {
-            lhs == rhs
-        } else {
-            false
-        }
-    }
-
-    #[test]
-    fn check_op_with_float() {
-        let decimals = [
-            Decimal::NaN,
-            Decimal::PositiveInf,
-            Decimal::NegativeInf,
-            Decimal::from_str("1.0").unwrap(),
-            Decimal::from_str("-1.0").unwrap(),
-            Decimal::from_str("0.0").unwrap(),
-        ];
-        let floats = [
-            f32::NAN,
-            f32::INFINITY,
-            f32::NEG_INFINITY,
-            1.0f32,
-            -1.0f32,
-            0.0f32,
-        ];
-        for (d_lhs, f_lhs) in decimals.iter().zip_eq_fast(floats.iter()) {
-            for (d_rhs, f_rhs) in decimals.iter().zip_eq_fast(floats.iter()) {
-                assert!(check((*d_lhs + *d_rhs).to_f32().unwrap(), f_lhs + f_rhs));
-                assert!(check((*d_lhs - *d_rhs).to_f32().unwrap(), f_lhs - f_rhs));
-                assert!(check((*d_lhs * *d_rhs).to_f32().unwrap(), f_lhs * f_rhs));
-                assert!(check((*d_lhs / *d_rhs).to_f32().unwrap(), f_lhs / f_rhs));
-                assert!(check((*d_lhs % *d_rhs).to_f32().unwrap(), f_lhs % f_rhs));
-            }
-        }
-    }
 
     #[test]
     fn basic_test() {

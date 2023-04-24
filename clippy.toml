@@ -7,6 +7,8 @@ disallowed-methods = [
 disallowed-types = [
     { path = "num_traits::AsPrimitive", reason = "Prefer From/Into" },
     { path = "num_traits::FromPrimitive", reason = "Prefer From/Into" },
+    { path = "num_traits::ToPrimitive", reason = "Prefer From/Into" },
+    { path = "num_traits::NumCast", reason = "Prefer From/Into" },
 ]
 doc-valid-idents = [
     "RisingWave",

@@ -33,9 +33,11 @@ where
         + PartialOrd
         + num_traits::Num
         + num_traits::NumAssignOps
-        + num_traits::NumCast
+        + From<i16>
+        + TryFrom<u64>
         + serde::Serialize
         + SampleUniform,
+    <Self as TryFrom<u64>>::Error: Debug,
 {
 }
 
@@ -66,13 +68,14 @@ impl<T> NumericFieldRandomGenerator for NumericFieldRandomConcrete<T>
 where
     T: NumericType + Scalar,
     <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+    <T as TryFrom<u64>>::Error: Debug,
 {
     fn new(min_option: Option<String>, max_option: Option<String>, seed: u64) -> Result<Self>
     where
         Self: Sized,
     {
         let mut min = T::zero();
-        let mut max = T::from(i16::MAX).unwrap();
+        let mut max = T::from(i16::MAX);
 
         if let Some(min_option) = min_option {
             min = min_option.parse::<T>()?;
@@ -101,6 +104,7 @@ impl<T> NumericFieldSequenceGenerator for NumericFieldSequenceConcrete<T>
 where
     T: NumericType + Scalar,
     <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+    <T as TryFrom<u64>>::Error: Debug,
 {
     fn new(
         star_option: Option<String>,
@@ -113,7 +117,7 @@ where
         Self: Sized,
     {
         let mut start = T::zero();
-        let mut end = T::from(i16::MAX).unwrap();
+        let mut end = T::from(i16::MAX);
 
         if let Some(star_optiont) = star_option {
             start = star_optiont.parse::<T>()?;
@@ -128,15 +132,16 @@ where
             end,
             offset,
             step,
-            cur: T::from(event_offset).ok_or_else(|| {
+            cur: T::try_from(event_offset).map_err(|_| {
                 anyhow::anyhow!("event offset is too big, offset: {}", event_offset,)
             })?,
         })
     }
 
     fn generate(&mut self) -> serde_json::Value {
-        let partition_result =
-            self.start + T::from(self.offset).unwrap() + T::from(self.step).unwrap() * self.cur;
+        let partition_result = self.start
+            + T::try_from(self.offset).unwrap()
+            + T::try_from(self.step).unwrap() * self.cur;
         let partition_result = if partition_result > self.end {
             None
         } else {
@@ -147,8 +152,9 @@ where
     }
 
     fn generate_datum(&mut self) -> Datum {
-        let partition_result =
-            self.start + T::from(self.offset).unwrap() + T::from(self.step).unwrap() * self.cur;
+        let partition_result = self.start
+            + T::try_from(self.offset).unwrap()
+            + T::try_from(self.step).unwrap() * self.cur;
         self.cur += T::one();
         if partition_result > self.end {
             None
