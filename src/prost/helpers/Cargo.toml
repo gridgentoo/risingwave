@@ -3,12 +3,6 @@ name = "prost-helpers"
 version = "0.1.0"
 edition = "2021"
 
-[package.metadata.cargo-machete]
-ignored = ["workspace-hack"]
-
-[package.metadata.cargo-udeps.ignore]
-normal = ["workspace-hack"]
-
 [lib]
 proc-macro = true
 
@@ -18,5 +12,11 @@ proc-macro2 = { version = "1", default-features = false }
 quote = "1"
 syn = "1"
 
-[target.'cfg(not(madsim))' .dependencies]
+[target.'cfg(not(madsim))'.dependencies]
 workspace-hack = { path = "../../workspace-hack" }
+
+[package.metadata.cargo-machete]
+ignored = ["workspace-hack"]
+
+[package.metadata.cargo-udeps.ignore]
+normal = ["workspace-hack"]
