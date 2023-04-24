@@ -248,7 +248,9 @@ impl CompactionDeleteRangeIterator {
         target_user_key: UserKey<&[u8]>,
         epoch: HummockEpoch,
     ) -> HummockEpoch {
-        while let Some((user_key, ..)) = self.events.events.get(self.seek_idx) && user_key.as_ref().le(&target_user_key) {
+        while let Some((user_key, ..)) = self.events.events.get(self.seek_idx)
+            && user_key.as_ref().le(&target_user_key)
+        {
             self.apply(self.seek_idx);
             self.seek_idx += 1;
         }
