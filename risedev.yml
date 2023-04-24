@@ -343,6 +343,7 @@ profile:
 
   # special config for deployment, see related PR for more information
   compose-3node-deploy:
+    config-path: src/config/serving.toml
     steps:
       # - use: minio
       #   id: minio-0
@@ -355,10 +356,10 @@ profile:
 
       # Not enabled by default as all previous benchmarks are not done with etcd.
       # Also we currently only support node-level docker volume tear down.
-      # - use: etcd
-      #   listen-address: "0.0.0.0"
-      #   address: ${dns-host:rw-meta-0}
-      #   id: etcd-0
+      - use: etcd
+        listen-address: "0.0.0.0"
+        address: ${dns-host:rw-meta-0}
+        id: etcd-0
 
       - use: meta-node
         # Id must starts with `meta-node`, therefore to be picked up by other
@@ -374,22 +375,49 @@ profile:
         id: compute-node-0
         listen-address: "0.0.0.0"
         address: ${dns-host:rw-compute-0}
-        async-stack-trace: verbose
+        async-stack-trace: off
         enable-tiered-cache: true
+        role: streaming
 
       - use: compute-node
         id: compute-node-1
         listen-address: "0.0.0.0"
         address: ${dns-host:rw-compute-1}
-        async-stack-trace: verbose
+        async-stack-trace: off
         enable-tiered-cache: true
+        role: streaming
 
       - use: compute-node
         id: compute-node-2
         listen-address: "0.0.0.0"
         address: ${dns-host:rw-compute-2}
-        async-stack-trace: verbose
+        async-stack-trace: off
         enable-tiered-cache: true
+        role: streaming
+
+      - use: compute-node
+        id: compute-node-3
+        listen-address: "0.0.0.0"
+        address: ${dns-host:rw-compute-3}
+        async-stack-trace: off
+        enable-tiered-cache: true
+        role: serving
+
+      - use: compute-node
+        id: compute-node-4
+        listen-address: "0.0.0.0"
+        address: ${dns-host:rw-compute-4}
+        async-stack-trace: off
+        enable-tiered-cache: true
+        role: serving
+
+      - use: compute-node
+        id: compute-node-5
+        listen-address: "0.0.0.0"
+        address: ${dns-host:rw-compute-5}
+        async-stack-trace: off
+        enable-tiered-cache: true
+        role: serving
 
       - use: frontend
         id: frontend-node-0
@@ -399,7 +427,7 @@ profile:
       - use: compactor
         id: compactor-0
         listen-address: "0.0.0.0"
-        address: ${dns-host:rw-source-0}
+        address: ${dns-host:rw-compactor-0}
         max-concurrent-task-number: 15
         compaction-worker-threads-number: 15
 
